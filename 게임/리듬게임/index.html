@@ -1,0 +1,1584 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cute Apple Rhythm - 3 Modes Rhythm Game</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Nunito:wght@700;800;900&family=Jua&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      font-family: 'Gaegu', 'Jua', 'Nunito', sans-serif;
+      background-color: #2b1f2d;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #game-container {
+      position: relative;
+      width: 100%;
+      max-width: 1100px;
+      height: 94vh;
+      max-height: 850px;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45), 0 0 0 10px rgba(255, 255, 255, 0.4);
+      display: flex;
+      flex-direction: column;
+      transition: background 0.6s ease;
+      background-size: cover;
+      background-position: center;
+    }
+
+    /* 배경 버전 1: 도트 패턴 */
+    .bg-version-1 {
+      background-image: url('참고자료/게임화면_버전1.jpg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: repeat;
+    }
+
+    /* 배경 버전 2: 앤틱 일러스트 */
+    .bg-version-2 {
+      background-image: url('참고자료/게임화면_버전2.jpg');
+      background-size: cover;
+      background-position: center;
+    }
+
+    /* 오버레이 필터: 가독성 확보 */
+    .bg-overlay {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at center, rgba(255, 255, 255, 0.15) 0%, rgba(20, 10, 25, 0.45) 100%);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* 상단 HUD 바 */
+    .hud-bar {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 24px;
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(8px);
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.15);
+      border-bottom: 4px solid #f9c0c8;
+    }
+
+    .song-title-box {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .badge-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      box-shadow: 0 4px 10px rgba(255, 154, 158, 0.5);
+      border: 2px solid #fff;
+    }
+
+    .song-name {
+      font-size: 22px;
+      font-weight: 700;
+      color: #ff4d6d;
+      letter-spacing: 0.5px;
+      text-shadow: 1px 1px 0 #fff;
+    }
+
+    .mode-pill-hud {
+      display: inline-block;
+      font-size: 13px;
+      font-weight: 800;
+      padding: 2px 10px;
+      border-radius: 10px;
+      margin-left: 8px;
+      color: #fff;
+      vertical-align: middle;
+    }
+
+    .score-display {
+      font-family: 'Nunito', 'Jua', sans-serif;
+      font-size: 32px;
+      font-weight: 900;
+      color: #3a0ca3;
+      text-shadow: 2px 2px 0 #fff, 0 0 12px rgba(114, 9, 183, 0.3);
+      letter-spacing: 2px;
+    }
+
+    .hud-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .hud-btn {
+      background: #fff;
+      border: 2px solid #ff758f;
+      color: #ff4d6d;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 15px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 3px 8px rgba(255, 117, 143, 0.3);
+      transition: all 0.2s;
+    }
+    .hud-btn:hover {
+      background: #ff758f;
+      color: #fff;
+      transform: translateY(-2px);
+    }
+    .hud-btn:active {
+      transform: translateY(1px);
+    }
+
+    /* 게임 캔버스 메인 영역 */
+    .game-stage {
+      position: relative;
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      z-index: 5;
+    }
+
+    #game-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* 하단 가이드 바 */
+    .bottom-legend {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 8px 18px;
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(8px);
+      border-top: 3px solid #ffccd5;
+      font-size: 15px;
+      font-weight: 700;
+      color: #555;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .legend-img {
+      width: 28px;
+      height: 28px;
+      object-fit: contain;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.25));
+    }
+
+    .legend-badge {
+      background: #ffe3e8;
+      color: #c9184a;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 13px;
+    }
+
+    /* 모달 */
+    .modal-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(30, 15, 35, 0.78);
+      backdrop-filter: blur(10px);
+      z-index: 100;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      opacity: 1;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .menu-card {
+      width: 90%;
+      max-width: 660px;
+      background: #fff8f8;
+      border: 5px solid #ff758f;
+      border-radius: 30px;
+      padding: 26px 30px;
+      text-align: center;
+      box-shadow: 0 15px 45px rgba(255, 117, 143, 0.4), inset 0 0 20px rgba(255, 200, 220, 0.3);
+      position: relative;
+    }
+
+    .menu-card h1 {
+      font-size: 36px;
+      color: #d90429;
+      text-shadow: 2px 2px 0 #fff, 4px 4px 0 #ffccd5;
+      margin-bottom: 4px;
+    }
+
+    .menu-card p.subtitle {
+      font-size: 17px;
+      color: #7209b7;
+      margin-bottom: 16px;
+      font-weight: bold;
+    }
+
+    /* 난이도 모드 선택 탭 */
+    .mode-selection-group {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .mode-tab-btn {
+      flex: 1;
+      padding: 10px 8px;
+      border-radius: 16px;
+      border: 3px solid #ffb3c1;
+      background: #fff;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .mode-tab-btn .mode-name {
+      font-size: 18px;
+      font-weight: 900;
+      color: #333;
+    }
+
+    .mode-tab-btn .mode-keys-desc {
+      font-size: 12px;
+      color: #666;
+      font-weight: bold;
+    }
+
+    .mode-tab-btn.active {
+      transform: translateY(-3px) scale(1.03);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+    }
+
+    .mode-tab-btn[data-mode="easy"].active {
+      border-color: #06d6a0;
+      background: linear-gradient(180deg, #e8fbf5 0%, #c7f9cc 100%);
+    }
+    .mode-tab-btn[data-mode="easy"].active .mode-name { color: #058c68; }
+
+    .mode-tab-btn[data-mode="normal"].active {
+      border-color: #3a86ff;
+      background: linear-gradient(180deg, #edf4ff 0%, #cbe3ff 100%);
+    }
+    .mode-tab-btn[data-mode="normal"].active .mode-name { color: #1d4ed8; }
+
+    .mode-tab-btn[data-mode="hard"].active {
+      border-color: #ff0054;
+      background: linear-gradient(180deg, #ffeef2 0%, #ffccd5 100%);
+    }
+    .mode-tab-btn[data-mode="hard"].active .mode-name { color: #c9184a; }
+
+    .song-list-container {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 200px;
+      overflow-y: auto;
+      padding-right: 6px;
+      margin-bottom: 16px;
+    }
+
+    .song-list-container::-webkit-scrollbar {
+      width: 8px;
+    }
+    .song-list-container::-webkit-scrollbar-thumb {
+      background: #ffb3c1;
+      border-radius: 10px;
+    }
+
+    .song-item-btn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      background: linear-gradient(90deg, #fff 0%, #fff0f3 100%);
+      border: 3px solid #ffb3c1;
+      border-radius: 16px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      text-align: left;
+    }
+
+    .song-item-btn:hover {
+      border-color: #ff4d6d;
+      transform: scale(1.02);
+      background: linear-gradient(90deg, #ffe5ec 0%, #ffccd5 100%);
+    }
+
+    .song-item-btn.selected {
+      border-color: #ff0054;
+      background: linear-gradient(90deg, #ffccd5 0%, #ffb3c1 100%);
+      box-shadow: 0 0 15px rgba(255, 0, 84, 0.4);
+    }
+
+    .song-info-meta {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .song-info-title {
+      font-size: 19px;
+      font-weight: bold;
+      color: #2b2d42;
+    }
+
+    .song-info-desc {
+      font-size: 13px;
+      color: #8d99ae;
+    }
+
+    .song-diff-badge {
+      font-size: 13px;
+      font-weight: bold;
+      padding: 4px 10px;
+      border-radius: 12px;
+      background: #ff4d6d;
+      color: white;
+    }
+
+    .bg-select-box {
+      margin-bottom: 16px;
+      background: #fff;
+      padding: 10px;
+      border-radius: 14px;
+      border: 2px dashed #ffb3c1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+    }
+
+    .bg-radio-label {
+      font-size: 15px;
+      font-weight: bold;
+      color: #495057;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .start-big-btn {
+      width: 100%;
+      padding: 14px 0;
+      background: linear-gradient(135deg, #ff4d6d, #ff758f);
+      border: none;
+      color: white;
+      font-size: 26px;
+      font-weight: 900;
+      border-radius: 20px;
+      box-shadow: 0 8px 25px rgba(255, 77, 109, 0.45);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+
+    .start-big-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 30px rgba(255, 77, 109, 0.6);
+      background: linear-gradient(135deg, #e63946, #ff4d6d);
+    }
+
+    .key-guide-pills {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .key-pill {
+      background: #2b2d42;
+      color: #fff;
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: bold;
+      letter-spacing: 0.5px;
+    }
+
+    /* 결과 모달 */
+    .result-stats {
+      margin: 18px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .result-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 20px;
+      background: #fff;
+      border-radius: 12px;
+      font-size: 17px;
+      font-weight: bold;
+      border: 1px solid #ffd1dc;
+    }
+    .result-rank {
+      font-size: 68px;
+      font-weight: 900;
+      color: #ff0054;
+      text-shadow: 3px 3px 0 #ffe5ec, 0 0 25px rgba(255, 0, 84, 0.4);
+      margin-bottom: 6px;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="game-container" class="bg-version-1">
+    <div class="bg-overlay"></div>
+
+    <!-- 헤더 HUD 영역 -->
+    <header class="hud-bar">
+      <div class="song-title-box">
+        <div class="badge-icon" id="badge-icon">🍎</div>
+        <div>
+          <div class="song-name">
+            <span id="hud-song-title">Sweet Melody</span>
+            <span class="mode-pill-hud" id="hud-mode-pill" style="background:#ff0054;">HARD (7 KEYS)</span>
+          </div>
+          <div style="font-size: 13px; color: #777; font-weight: bold;" id="hud-bg-label">배경: 알록달록 도트 (버전1)</div>
+        </div>
+      </div>
+
+      <div style="text-align: center;">
+        <div style="font-size: 12px; font-weight: bold; color: #888; text-transform: uppercase;">SCORE</div>
+        <div class="score-display" id="hud-score">0000000</div>
+      </div>
+
+      <div class="hud-controls">
+        <button class="hud-btn" id="btn-toggle-bg" title="배경 테마 변경">
+          <span>🎨</span> 배경 전환
+        </button>
+        <button class="hud-btn" id="btn-open-menu" title="노래 및 난이도 선택">
+          <span>🎵</span> 모드 / 곡 변경
+        </button>
+      </div>
+    </header>
+
+    <!-- 게임 캔버스 스테이지 -->
+    <main class="game-stage" id="stage-wrapper">
+      <canvas id="game-canvas"></canvas>
+    </main>
+
+    <!-- 하단 노트별 점수 및 현재 모드 키 가이드 -->
+    <footer class="bottom-legend">
+      <div class="legend-item">
+        <img class="legend-img" src="참고자료/기본노트_아이콘_누끼.png" alt="기본사과단추">
+        <span>기본 사과단추:</span>
+        <span class="legend-badge">100 Pts</span>
+      </div>
+      <div class="legend-item">
+        <img class="legend-img" src="참고자료/포인트노트_아이콘_누끼.png" alt="체크사과단추">
+        <span>포인트 체크단추:</span>
+        <span class="legend-badge" style="background:#e0f2fe; color:#0284c7;">300 Pts (보너스)</span>
+      </div>
+      <div class="legend-item">
+        <img class="legend-img" src="참고자료/롱노트_아이콘_누끼.png" alt="벚꽃사과단추">
+        <span>롱노트 벚꽃단추:</span>
+        <span class="legend-badge" style="background:#fce7f3; color:#be185d;">누르고 있기 (지속 틱)</span>
+      </div>
+      <div class="legend-item" id="footer-keys-guide" style="color:#d90429; font-weight:900;">
+        키 매핑: [S] [D] [F] [SPACE] [J] [K] [L]
+      </div>
+    </footer>
+
+    <!-- 시작 / 모드 / 노래 선택 모달 -->
+    <div class="modal-overlay" id="menu-modal">
+      <div class="menu-card">
+        <h1>CUTE APPLE RHYTHM</h1>
+        <p class="subtitle">✨ 깔끔한 사과단추 누끼 노트 & 3가지 난이도 모드 ✨</p>
+
+        <!-- 난이도 모드 선택 -->
+        <div style="font-size: 15px; font-weight: 900; color: #ff4d6d; text-align: left; margin-bottom: 6px;">
+          🎮 난이도 선택 (키 수 변경):
+        </div>
+        <div class="mode-selection-group">
+          <div class="mode-tab-btn" data-mode="easy" id="tab-mode-easy">
+            <span class="mode-name">🌱 이지 모드</span>
+            <span class="mode-keys-desc">3키: [ F ] [ SPACE ] [ K ]</span>
+          </div>
+          <div class="mode-tab-btn" data-mode="normal" id="tab-mode-normal">
+            <span class="mode-name">⭐ 노멀 모드</span>
+            <span class="mode-keys-desc">5키: [ D ] [ F ] [ SPACE ] [ J ] [ K ]</span>
+          </div>
+          <div class="mode-tab-btn active" data-mode="hard" id="tab-mode-hard">
+            <span class="mode-name">🔥 하드 모드</span>
+            <span class="mode-keys-desc">7키: [ S ] [ D ] [ F ] [ SPACE ] [ J ] [ K ] [ L ]</span>
+          </div>
+        </div>
+
+        <div class="bg-select-box">
+          <span style="font-weight: bold; color: #ff4d6d;">배경 테마 선택:</span>
+          <label class="bg-radio-label">
+            <input type="radio" name="bg-select" value="1" checked id="bg-radio-1">
+            버전 1 (도트 패턴)
+          </label>
+          <label class="bg-radio-label">
+            <input type="radio" name="bg-select" value="2" id="bg-radio-2">
+            버전 2 (앤틱 일러스트)
+          </label>
+        </div>
+
+        <div class="song-list-container" id="song-list">
+          <!-- 동적 렌더링 -->
+        </div>
+
+        <div class="key-guide-pills" id="modal-key-pills">
+          <!-- 동적 렌더링 -->
+        </div>
+        <div style="font-size: 13px; color: #888; margin: 8px 0 14px;" id="modal-key-tip">
+          선택된 모드의 키로 리듬에 맞춰 단추 노트를 타격하세요!
+        </div>
+
+        <button class="start-big-btn" id="btn-start-game">게임 시작 (START)</button>
+      </div>
+    </div>
+
+    <!-- 결과 모달 -->
+    <div class="modal-overlay hidden" id="result-modal">
+      <div class="menu-card">
+        <div class="result-rank" id="res-rank">S</div>
+        <h1 id="res-title">STAGE CLEAR!</h1>
+        <p class="subtitle" id="res-song-name">곡 이름</p>
+
+        <div class="result-stats">
+          <div class="result-row">
+            <span>난이도 모드</span>
+            <span style="color:#ff0054;" id="res-mode-badge">HARD (7 KEYS)</span>
+          </div>
+          <div class="result-row">
+            <span>최종 점수 (FINAL SCORE)</span>
+            <span style="color:#d90429;" id="res-score">0</span>
+          </div>
+          <div class="result-row">
+            <span>최대 콤보 (MAX COMBO)</span>
+            <span style="color:#7209b7;" id="res-combo">0</span>
+          </div>
+          <div class="result-row">
+            <span>PERFECT / GREAT</span>
+            <span style="color:#0284c7;" id="res-perfect">0 / 0</span>
+          </div>
+          <div class="result-row">
+            <span>MISS</span>
+            <span style="color:#888;" id="res-miss">0</span>
+          </div>
+        </div>
+
+        <div style="display:flex; gap: 12px;">
+          <button class="start-big-btn" style="flex:1; background: #6c757d;" id="btn-result-menu">곡/모드 선택으로</button>
+          <button class="start-big-btn" style="flex:1;" id="btn-result-retry">다시 플레이</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ========================================================
+       1. 오디오 신디사이저 (Web Audio API)
+       ======================================================== */
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.bgmTimer = null;
+        this.isPlayingBgm = false;
+        this.bgmStep = 0;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+        if (this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playHit(type, judgment) {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        let freq = 523.25;
+        let duration = 0.08;
+
+        if (type === 'point') {
+          freq = 880;
+          osc.type = 'triangle';
+          gain.gain.setValueAtTime(0.35, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+          osc.frequency.setValueAtTime(freq, now);
+          osc.frequency.exponentialRampToValueAtTime(1760, now + 0.15);
+          duration = 0.18;
+        } else if (type === 'long') {
+          freq = 659.25;
+          osc.type = 'sine';
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+          duration = 0.05;
+        } else {
+          osc.type = 'sine';
+          freq = judgment === 'PERFECT' ? 587.33 : 440;
+          gain.gain.setValueAtTime(0.3, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+          osc.frequency.setValueAtTime(freq, now);
+          osc.frequency.exponentialRampToValueAtTime(freq * 1.5, now + 0.08);
+          duration = 0.09;
+        }
+
+        osc.start(now);
+        osc.stop(now + duration);
+      }
+
+      playMiss() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(180, now);
+        osc.frequency.exponentialRampToValueAtTime(90, now + 0.12);
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+
+        osc.start(now);
+        osc.stop(now + 0.12);
+      }
+
+      startBgm(songId) {
+        this.stopBgm();
+        this.init();
+        this.isPlayingBgm = true;
+        this.bgmStep = 0;
+
+        const bpm = songId === 1 ? 132 : (songId === 2 ? 148 : 120);
+        const stepInterval = (60 / bpm / 2) * 1000;
+
+        const melodies = {
+          1: [
+            523, 0, 587, 659, 0, 784, 880, 0,
+            784, 659, 587, 0, 523, 659, 587, 0,
+            659, 784, 880, 0, 1046, 880, 784, 659,
+            784, 659, 587, 523, 587, 0, 523, 0
+          ],
+          2: [
+            659, 659, 0, 784, 880, 880, 0, 1046,
+            987, 880, 784, 659, 587, 659, 784, 0,
+            880, 0, 1046, 0, 1174, 1046, 880, 784,
+            659, 784, 880, 987, 1046, 0, 1046, 0
+          ],
+          3: [
+            523, 659, 784, 659, 523, 659, 784, 659,
+            587, 698, 880, 698, 587, 698, 880, 698,
+            659, 784, 1046, 784, 659, 784, 1046, 784,
+            587, 659, 784, 880, 784, 659, 523, 0
+          ]
+        };
+
+        const pattern = melodies[songId] || melodies[1];
+
+        this.bgmTimer = setInterval(() => {
+          if (!this.isPlayingBgm) return;
+          const noteFreq = pattern[this.bgmStep % pattern.length];
+          const bassFreq = (this.bgmStep % 4 === 0) ? (noteFreq ? noteFreq / 2 : 261) : 0;
+
+          if (noteFreq > 0) {
+            this.playTone(noteFreq, 'sine', 0.12, 0.12);
+          }
+          if (bassFreq > 0) {
+            this.playTone(bassFreq, 'triangle', 0.15, 0.18);
+          }
+          this.bgmStep++;
+        }, stepInterval);
+      }
+
+      playTone(freq, type, duration, vol) {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, now);
+        gain.gain.setValueAtTime(vol, now);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+        osc.start(now);
+        osc.stop(now + duration);
+      }
+
+      stopBgm() {
+        this.isPlayingBgm = false;
+        if (this.bgmTimer) {
+          clearInterval(this.bgmTimer);
+          this.bgmTimer = null;
+        }
+      }
+    }
+
+    /* ========================================================
+       2. 이미지 에셋 로더 (누끼 딴 투명 PNG 단추 아이콘)
+       ======================================================== */
+    const noteImages = {
+      basic: new Image(),
+      point: new Image(),
+      long: new Image()
+    };
+    noteImages.basic.src = '참고자료/기본노트_아이콘_누끼.png';
+    noteImages.point.src = '참고자료/포인트노트_아이콘_누끼.png';
+    noteImages.long.src = '참고자료/롱노트_아이콘_누끼.png';
+
+    // 3가지 난이도 모드 정의 (요구사항)
+    const MODES = {
+      easy: {
+        name: "EASY",
+        titleKo: "이지 모드",
+        keys: ['KeyF', 'Space', 'KeyK'],
+        names: ['F', 'SPACE', 'K'],
+        color: '#06d6a0',
+        noteDensity: 0.65 // 편안한 채보 밀도
+      },
+      normal: {
+        name: "NORMAL",
+        titleKo: "노멀 모드",
+        keys: ['KeyD', 'KeyF', 'Space', 'KeyJ', 'KeyK'],
+        names: ['D', 'F', 'SPACE', 'J', 'K'],
+        color: '#3a86ff',
+        noteDensity: 0.85
+      },
+      hard: {
+        name: "HARD",
+        titleKo: "하드 모드",
+        keys: ['KeyS', 'KeyD', 'KeyF', 'Space', 'KeyJ', 'KeyK', 'KeyL'],
+        names: ['S', 'D', 'F', 'SPACE', 'J', 'K', 'L'],
+        color: '#ff0054',
+        noteDensity: 1.15
+      }
+    };
+
+    // 곡 목록
+    const SONGS = [
+      {
+        id: 1,
+        title: "Apple A Day (건강한 멜로디)",
+        desc: "상큼 발랄한 초록 사과 테마곡 / BPM 132",
+        bpm: 132,
+        duration: 45,
+        accentColor: "#2ec4b6"
+      },
+      {
+        id: 2,
+        title: "Beauty & Sparkle (보너스 하이퍼)",
+        desc: "체크무늬 포인트 사과가 쏟아지는 빠른 비트! / BPM 148",
+        bpm: 148,
+        duration: 50,
+        accentColor: "#e63946"
+      },
+      {
+        id: 3,
+        title: "Cherry Blossom Dream (벚꽃 앤틱)",
+        desc: "부드럽고 긴 롱노트 향연의 감성곡 / BPM 120",
+        bpm: 120,
+        duration: 45,
+        accentColor: "#ff758f"
+      }
+    ];
+
+    /* ========================================================
+       3. 리듬 게임 메인 엔진
+       ======================================================== */
+    class RhythmGame {
+      constructor() {
+        this.container = document.getElementById('game-container');
+        this.canvas = document.getElementById('game-canvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.sound = new SoundEngine();
+
+        this.currentBgVersion = 1;
+        this.selectedSong = SONGS[0];
+        this.currentModeKey = 'hard'; // 'easy', 'normal', 'hard'
+
+        this.isPlaying = false;
+        this.gameTime = 0;
+        this.lastFrameTime = 0;
+        this.score = 0;
+        this.combo = 0;
+        this.maxCombo = 0;
+        this.judgments = { PERFECT: 0, GREAT: 0, MISS: 0 };
+
+        this.notes = [];
+        this.effects = [];
+        this.floatingTexts = [];
+
+        this.JUDGE_WINDOW = {
+          PERFECT: 65,
+          GREAT: 130,
+          MISS: 200
+        };
+
+        this.SCORE_TABLE = {
+          basic: { PERFECT: 100, GREAT: 70 },
+          point: { PERFECT: 300, GREAT: 200 },
+          longTick: 25
+        };
+
+        this.initMode(this.currentModeKey);
+        this.initUI();
+        this.resize();
+        window.addEventListener('resize', () => this.resize());
+        this.bindEvents();
+      }
+
+      initMode(modeKey) {
+        this.currentModeKey = modeKey;
+        this.modeConfig = MODES[modeKey];
+        this.laneKeys = this.modeConfig.keys;
+        this.laneKeyNames = this.modeConfig.names;
+        this.laneCount = this.laneKeys.length;
+
+        this.keyState = new Array(this.laneCount).fill(false);
+        this.lanePressAnim = new Array(this.laneCount).fill(0);
+
+        // HUD 및 가이드 갱신
+        const pill = document.getElementById('hud-mode-pill');
+        pill.textContent = `${this.modeConfig.name} (${this.laneCount} KEYS)`;
+        pill.style.background = this.modeConfig.color;
+
+        const footerGuide = document.getElementById('footer-keys-guide');
+        footerGuide.textContent = `키 매핑: [ ${this.laneKeyNames.join(' ] [ ')} ]`;
+
+        this.updateModalKeyPills();
+      }
+
+      updateModalKeyPills() {
+        const pillsContainer = document.getElementById('modal-key-pills');
+        pillsContainer.innerHTML = '';
+        this.laneKeyNames.forEach(k => {
+          const span = document.createElement('span');
+          span.className = 'key-pill';
+          span.textContent = k;
+          if (k === 'SPACE') {
+            span.style.background = '#ff4d6d';
+            span.style.padding = '4px 18px';
+          }
+          pillsContainer.appendChild(span);
+        });
+      }
+
+      initUI() {
+        this.renderSongList();
+        this.updateBgUI();
+      }
+
+      renderSongList() {
+        const listEl = document.getElementById('song-list');
+        listEl.innerHTML = '';
+        SONGS.forEach(song => {
+          const item = document.createElement('div');
+          item.className = `song-item-btn ${song.id === this.selectedSong.id ? 'selected' : ''}`;
+          item.innerHTML = `
+            <div class="song-info-meta">
+              <span class="song-info-title">${song.title}</span>
+              <span class="song-info-desc">${song.desc}</span>
+            </div>
+            <span class="song-diff-badge" style="background:${song.accentColor}">BPM ${song.bpm}</span>
+          `;
+          item.onclick = () => {
+            this.selectedSong = song;
+            document.querySelectorAll('.song-item-btn').forEach(el => el.classList.remove('selected'));
+            item.classList.add('selected');
+            document.getElementById('hud-song-title').textContent = song.title;
+          };
+          listEl.appendChild(item);
+        });
+      }
+
+      toggleBackground(version) {
+        if (version) {
+          this.currentBgVersion = version;
+        } else {
+          this.currentBgVersion = this.currentBgVersion === 1 ? 2 : 1;
+        }
+        this.updateBgUI();
+      }
+
+      updateBgUI() {
+        this.container.classList.remove('bg-version-1', 'bg-version-2');
+        this.container.classList.add(`bg-version-${this.currentBgVersion}`);
+        document.getElementById('hud-bg-label').textContent = 
+          this.currentBgVersion === 1 ? '배경: 알록달록 도트 (버전1)' : '배경: 앤틱 일러스트 (버전2)';
+        
+        const radio1 = document.getElementById('bg-radio-1');
+        const radio2 = document.getElementById('bg-radio-2');
+        if (radio1 && radio2) {
+          radio1.checked = this.currentBgVersion === 1;
+          radio2.checked = this.currentBgVersion === 2;
+        }
+      }
+
+      resize() {
+        const stage = document.getElementById('stage-wrapper');
+        const dpr = window.devicePixelRatio || 1;
+        this.width = stage.clientWidth;
+        this.height = stage.clientHeight;
+
+        this.canvas.width = this.width * dpr;
+        this.canvas.height = this.height * dpr;
+        this.ctx.scale(dpr, dpr);
+
+        // 모드별 최적 레인 너비 산출 (이지 3키: 110px, 노멀 5키: 94px, 하드 7키: 82px)
+        const maxLaneW = this.laneCount === 3 ? 116 : (this.laneCount === 5 ? 96 : 82);
+        this.laneWidth = Math.min(maxLaneW, (this.width - 40) / this.laneCount);
+        this.trackWidth = this.laneWidth * this.laneCount;
+        this.trackLeft = (this.width - this.trackWidth) / 2;
+        this.hitLineY = this.height - 95;
+      }
+
+      bindEvents() {
+        // 난이도 모드 탭 클릭
+        ['easy', 'normal', 'hard'].forEach(mKey => {
+          const btn = document.getElementById(`tab-mode-${mKey}`);
+          btn.onclick = () => {
+            document.querySelectorAll('.mode-tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            this.initMode(mKey);
+            this.resize();
+          };
+        });
+
+        // 배경 라디오
+        document.getElementById('bg-radio-1').onchange = () => this.toggleBackground(1);
+        document.getElementById('bg-radio-2').onchange = () => this.toggleBackground(2);
+
+        // 상단 HUD 버튼
+        document.getElementById('btn-toggle-bg').onclick = () => this.toggleBackground();
+        document.getElementById('btn-open-menu').onclick = () => {
+          this.pause();
+          document.getElementById('menu-modal').classList.remove('hidden');
+        };
+
+        // 모달 버튼
+        document.getElementById('btn-start-game').onclick = () => this.start();
+        document.getElementById('btn-result-menu').onclick = () => {
+          document.getElementById('result-modal').classList.add('hidden');
+          document.getElementById('menu-modal').classList.remove('hidden');
+        };
+        document.getElementById('btn-result-retry').onclick = () => {
+          document.getElementById('result-modal').classList.add('hidden');
+          this.start();
+        };
+
+        // 키보드 이벤트 (선택된 난이도 모드의 키만 반응)
+        window.addEventListener('keydown', (e) => {
+          const laneIdx = this.laneKeys.indexOf(e.code);
+          if (laneIdx !== -1) {
+            e.preventDefault();
+            if (!this.keyState[laneIdx]) {
+              this.keyState[laneIdx] = true;
+              this.lanePressAnim[laneIdx] = 1.0;
+              this.onKeyPress(laneIdx);
+            }
+          }
+        });
+
+        window.addEventListener('keyup', (e) => {
+          const laneIdx = this.laneKeys.indexOf(e.code);
+          if (laneIdx !== -1) {
+            e.preventDefault();
+            this.keyState[laneIdx] = false;
+            this.onKeyRelease(laneIdx);
+          }
+        });
+      }
+
+      /* ----------------------------------------------------
+         채보 생성기 (모드별 레인 수 및 밀도 반영)
+         ---------------------------------------------------- */
+      generateChart(song) {
+        const notes = [];
+        const bpm = song.bpm;
+        const beatSec = 60 / bpm;
+        const totalDuration = song.duration;
+        const density = this.modeConfig.noteDensity;
+        let t = 2.0;
+
+        let noteId = 0;
+        while (t < totalDuration) {
+          const lane = Math.floor(Math.random() * this.laneCount);
+          const randType = Math.random();
+
+          if (randType < 0.60) {
+            // 기본단추
+            notes.push({
+              id: noteId++,
+              type: 'basic',
+              lane: lane,
+              time: t,
+              hit: false,
+              missed: false
+            });
+            const stepMult = Math.random() > 0.4 ? (0.5 / density) : (1.0 / density);
+            t += beatSec * Math.max(0.35, stepMult);
+          } else if (randType < 0.85) {
+            // 포인트단추 (보너스)
+            notes.push({
+              id: noteId++,
+              type: 'point',
+              lane: lane,
+              time: t,
+              hit: false,
+              missed: false
+            });
+            t += (beatSec * 0.75) / density;
+          } else {
+            // 롱노트단추
+            const duration = beatSec * (1.2 + Math.random() * 1.5);
+            notes.push({
+              id: noteId++,
+              type: 'long',
+              lane: lane,
+              time: t,
+              duration: duration,
+              holding: false,
+              hit: false,
+              completed: false,
+              missed: false,
+              lastTickTime: t
+            });
+            t += duration + ((beatSec * 0.5) / density);
+          }
+        }
+
+        return notes;
+      }
+
+      start() {
+        document.getElementById('menu-modal').classList.add('hidden');
+        document.getElementById('result-modal').classList.add('hidden');
+
+        this.sound.startBgm(this.selectedSong.id);
+        this.notes = this.generateChart(this.selectedSong);
+        this.score = 0;
+        this.combo = 0;
+        this.maxCombo = 0;
+        this.judgments = { PERFECT: 0, GREAT: 0, MISS: 0 };
+        this.effects = [];
+        this.floatingTexts = [];
+        this.gameTime = 0;
+        this.lastFrameTime = performance.now();
+        this.isPlaying = true;
+        this.updateHUD();
+
+        requestAnimationFrame((t) => this.gameLoop(t));
+      }
+
+      pause() {
+        this.isPlaying = false;
+        this.sound.stopBgm();
+      }
+
+      onKeyPress(lane) {
+        if (!this.isPlaying) return;
+
+        let closestNote = null;
+        let minDiff = Infinity;
+
+        for (const note of this.notes) {
+          if (note.lane !== lane || note.hit || note.missed) continue;
+          const diff = Math.abs((note.time - this.gameTime) * 1000);
+          if (diff < minDiff) {
+            minDiff = diff;
+            closestNote = note;
+          }
+        }
+
+        if (closestNote && minDiff <= this.JUDGE_WINDOW.MISS) {
+          if (minDiff <= this.JUDGE_WINDOW.PERFECT) {
+            this.handleHit(closestNote, 'PERFECT');
+          } else if (minDiff <= this.JUDGE_WINDOW.GREAT) {
+            this.handleHit(closestNote, 'GREAT');
+          } else {
+            this.handleMiss(closestNote);
+          }
+        }
+      }
+
+      onKeyRelease(lane) {
+        for (const note of this.notes) {
+          if (note.lane === lane && note.type === 'long' && note.holding && !note.completed) {
+            note.holding = false;
+            const remaining = (note.time + note.duration) - this.gameTime;
+            if (remaining > 0.25) {
+              this.combo = 0;
+              this.addFloatingText('RELEASE EARLY', lane, '#ff0054');
+            } else {
+              note.completed = true;
+              this.addFloatingText('COMPLETE!', lane, '#ffb703');
+            }
+          }
+        }
+      }
+
+      handleHit(note, judgment) {
+        note.hit = true;
+        this.judgments[judgment]++;
+        this.combo++;
+        if (this.combo > this.maxCombo) this.maxCombo = this.combo;
+
+        let basePoints = this.SCORE_TABLE[note.type][judgment];
+        const comboBonus = Math.min(1.5, 1 + (this.combo * 0.01));
+        const finalPoints = Math.round(basePoints * comboBonus);
+
+        this.score += finalPoints;
+        this.sound.playHit(note.type, judgment);
+
+        if (note.type === 'long') {
+          note.holding = true;
+          note.lastTickTime = this.gameTime;
+        }
+
+        const laneCenterX = this.trackLeft + (note.lane + 0.5) * this.laneWidth;
+        const color = judgment === 'PERFECT' ? '#ffd166' : '#06d6a0';
+        this.addHitEffect(laneCenterX, this.hitLineY, note.type);
+        this.addFloatingText(`${judgment} +${finalPoints}`, note.lane, color);
+        this.updateHUD();
+      }
+
+      handleMiss(note) {
+        note.missed = true;
+        this.judgments.MISS++;
+        this.combo = 0;
+        this.sound.playMiss();
+        this.addFloatingText('MISS', note.lane, '#ff0054');
+        this.updateHUD();
+      }
+
+      addFloatingText(text, lane, color) {
+        const x = this.trackLeft + (lane + 0.5) * this.laneWidth;
+        this.floatingTexts.push({
+          text: text,
+          x: x,
+          y: this.hitLineY - 35,
+          alpha: 1.0,
+          color: color,
+          vy: -1.2
+        });
+      }
+
+      addHitEffect(x, y, type) {
+        const count = type === 'point' ? 14 : 8;
+        const colors = type === 'point' 
+          ? ['#00b4d8', '#90e0ef', '#caf0f8', '#fff'] 
+          : (type === 'long' ? ['#ff758f', '#ffb3c1', '#ffe5ec', '#fff'] : ['#80ed99', '#c7f9cc', '#fff']);
+
+        for (let i = 0; i < count; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const speed = 2 + Math.random() * 4;
+          this.effects.push({
+            x: x,
+            y: y,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            radius: 3 + Math.random() * 4,
+            alpha: 1.0,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            life: 1.0
+          });
+        }
+      }
+
+      updateHUD() {
+        document.getElementById('hud-score').textContent = String(this.score).padStart(7, '0');
+      }
+
+      endGame() {
+        this.isPlaying = false;
+        this.sound.stopBgm();
+
+        const totalNotes = this.judgments.PERFECT + this.judgments.GREAT + this.judgments.MISS;
+        const acc = totalNotes > 0 
+          ? ((this.judgments.PERFECT * 1.0 + this.judgments.GREAT * 0.7) / totalNotes) * 100 
+          : 0;
+
+        let rank = 'C';
+        if (acc >= 95) rank = 'SS';
+        else if (acc >= 90) rank = 'S';
+        else if (acc >= 80) rank = 'A';
+        else if (acc >= 70) rank = 'B';
+
+        document.getElementById('res-rank').textContent = rank;
+        document.getElementById('res-song-name').textContent = this.selectedSong.title;
+        document.getElementById('res-mode-badge').textContent = `${this.modeConfig.name} (${this.laneCount} KEYS)`;
+        document.getElementById('res-score').textContent = this.score.toLocaleString();
+        document.getElementById('res-combo').textContent = this.maxCombo;
+        document.getElementById('res-perfect').textContent = `${this.judgments.PERFECT} / ${this.judgments.GREAT}`;
+        document.getElementById('res-miss').textContent = this.judgments.MISS;
+
+        document.getElementById('result-modal').classList.remove('hidden');
+      }
+
+      gameLoop(timestamp) {
+        if (!this.isPlaying) return;
+
+        const dt = (timestamp - this.lastFrameTime) / 1000;
+        this.lastFrameTime = timestamp;
+        this.gameTime += dt;
+
+        if (this.gameTime >= this.selectedSong.duration + 2.0) {
+          this.endGame();
+          return;
+        }
+
+        this.update(dt);
+        this.render();
+
+        requestAnimationFrame((t) => this.gameLoop(t));
+      }
+
+      update(dt) {
+        const fallSpeed = 460;
+
+        for (const note of this.notes) {
+          if (!note.hit && !note.missed) {
+            if ((this.gameTime - note.time) * 1000 > this.JUDGE_WINDOW.MISS) {
+              this.handleMiss(note);
+            }
+          }
+
+          if (note.type === 'long' && note.holding && !note.completed) {
+            if (this.gameTime - note.lastTickTime >= 0.1) {
+              this.score += this.SCORE_TABLE.longTick;
+              note.lastTickTime = this.gameTime;
+              this.sound.playHit('long');
+              this.addHitEffect(this.trackLeft + (note.lane + 0.5) * this.laneWidth, this.hitLineY, 'long');
+              this.updateHUD();
+            }
+
+            if (this.gameTime >= note.time + note.duration) {
+              note.completed = true;
+              note.holding = false;
+              this.addFloatingText('PERFECT END!', note.lane, '#ffb703');
+            }
+          }
+        }
+
+        for (let i = this.effects.length - 1; i >= 0; i--) {
+          const ef = this.effects[i];
+          ef.x += ef.vx;
+          ef.y += ef.vy;
+          ef.alpha -= dt * 2.2;
+          if (ef.alpha <= 0) this.effects.splice(i, 1);
+        }
+
+        for (let i = this.floatingTexts.length - 1; i >= 0; i--) {
+          const ft = this.floatingTexts[i];
+          ft.y += ft.vy;
+          ft.alpha -= dt * 1.5;
+          if (ft.alpha <= 0) this.floatingTexts.splice(i, 1);
+        }
+
+        for (let i = 0; i < this.laneCount; i++) {
+          if (this.lanePressAnim[i] > 0) {
+            this.lanePressAnim[i] = Math.max(0, this.lanePressAnim[i] - dt * 4);
+          }
+        }
+      }
+
+      render() {
+        this.ctx.clearRect(0, 0, this.width, this.height);
+
+        // 1. 레인 트랙
+        this.renderTrack();
+
+        // 2. 판정선 및 타격 지점
+        this.renderHitZone();
+
+        // 3. 누끼 딴 사과단추 노트
+        this.renderNotes();
+
+        // 4. 이펙트 및 콤보
+        this.renderEffects();
+      }
+
+      renderTrack() {
+        const tX = this.trackLeft;
+        const tW = this.trackWidth;
+        const tH = this.height;
+
+        this.ctx.save();
+        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.50)';
+        this.ctx.fillRect(tX, 0, tW, tH);
+
+        this.ctx.strokeStyle = '#ff99aa';
+        this.ctx.lineWidth = 4;
+        this.ctx.strokeRect(tX, 0, tW, tH);
+
+        // 중앙 레인 인덱스
+        const centerLane = Math.floor(this.laneCount / 2);
+
+        for (let i = 0; i < this.laneCount; i++) {
+          const laneX = tX + i * this.laneWidth;
+
+          if (i > 0) {
+            this.ctx.beginPath();
+            this.ctx.setLineDash([8, 8]);
+            this.ctx.strokeStyle = 'rgba(255, 105, 135, 0.35)';
+            this.ctx.lineWidth = 2;
+            this.ctx.moveTo(laneX, 0);
+            this.ctx.lineTo(laneX, tH);
+            this.ctx.stroke();
+            this.ctx.setLineDash([]);
+          }
+
+          // 중앙 레인 강조
+          if (i === centerLane) {
+            this.ctx.fillStyle = 'rgba(255, 214, 224, 0.28)';
+            this.ctx.fillRect(laneX, 0, this.laneWidth, tH);
+          }
+
+          // 키 누름 빛 기둥
+          if (this.keyState[i] || this.lanePressAnim[i] > 0) {
+            const intensity = this.keyState[i] ? 0.38 : this.lanePressAnim[i] * 0.25;
+            const grad = this.ctx.createLinearGradient(0, tH, 0, 0);
+            grad.addColorStop(0, `rgba(255, 105, 180, ${intensity})`);
+            grad.addColorStop(0.7, `rgba(255, 182, 193, ${intensity * 0.4})`);
+            grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            this.ctx.fillStyle = grad;
+            this.ctx.fillRect(laneX, 0, this.laneWidth, tH);
+          }
+        }
+        this.ctx.restore();
+      }
+
+      renderHitZone() {
+        const y = this.hitLineY;
+
+        this.ctx.save();
+        this.ctx.strokeStyle = '#ff3366';
+        this.ctx.lineWidth = 4;
+        this.ctx.beginPath();
+        this.ctx.moveTo(this.trackLeft, y);
+        this.ctx.lineTo(this.trackLeft + this.trackWidth, y);
+        this.ctx.stroke();
+
+        const baseRadius = this.laneCount === 3 ? 32 : (this.laneCount === 5 ? 28 : 25);
+
+        for (let i = 0; i < this.laneCount; i++) {
+          const cx = this.trackLeft + (i + 0.5) * this.laneWidth;
+          const isPressed = this.keyState[i];
+          const radius = isPressed ? baseRadius - 2 : baseRadius;
+
+          this.ctx.beginPath();
+          this.ctx.arc(cx, y, radius + 5, 0, Math.PI * 2);
+          this.ctx.fillStyle = isPressed ? 'rgba(255, 77, 109, 0.4)' : 'rgba(255, 255, 255, 0.65)';
+          this.ctx.fill();
+
+          this.ctx.beginPath();
+          this.ctx.arc(cx, y, radius, 0, Math.PI * 2);
+          this.ctx.fillStyle = isPressed ? '#ffccd5' : '#ffffff';
+          this.ctx.fill();
+          this.ctx.lineWidth = 3;
+          this.ctx.strokeStyle = isPressed ? '#ff0054' : '#ff758f';
+          this.ctx.stroke();
+
+          const keyName = this.laneKeyNames[i];
+          this.ctx.fillStyle = isPressed ? '#d90429' : '#590d22';
+          this.ctx.font = keyName.length > 3 ? 'bold 13px Nunito' : 'bold 17px Nunito';
+          this.ctx.textAlign = 'center';
+          this.ctx.textBaseline = 'middle';
+          this.ctx.fillText(keyName, cx, y);
+        }
+        this.ctx.restore();
+      }
+
+      renderNotes() {
+        const fallSpeed = 460;
+
+        for (const note of this.notes) {
+          if (note.missed) continue;
+          if (note.type !== 'long' && note.hit) continue;
+          if (note.type === 'long' && note.completed) continue;
+
+          const timeUntilHit = note.time - this.gameTime;
+          const currentY = this.hitLineY - (timeUntilHit * fallSpeed);
+
+          if (currentY < -150 || (note.type !== 'long' && currentY > this.height + 50)) continue;
+
+          const cx = this.trackLeft + (note.lane + 0.5) * this.laneWidth;
+          // 단추 크기
+          const noteSize = this.laneWidth * 0.78;
+
+          if (note.type === 'long') {
+            const lengthPx = note.duration * fallSpeed;
+            const topY = currentY - lengthPx;
+            const drawTopY = Math.max(topY, -100);
+            const drawBottomY = note.holding ? this.hitLineY : currentY;
+
+            if (drawBottomY > drawTopY) {
+              this.ctx.save();
+              const beamGrad = this.ctx.createLinearGradient(cx - noteSize/2, 0, cx + noteSize/2, 0);
+              beamGrad.addColorStop(0, 'rgba(255, 182, 193, 0.85)');
+              beamGrad.addColorStop(0.5, 'rgba(255, 235, 245, 0.95)');
+              beamGrad.addColorStop(1, 'rgba(255, 182, 193, 0.85)');
+
+              this.ctx.fillStyle = beamGrad;
+              this.ctx.strokeStyle = '#ff758f';
+              this.ctx.lineWidth = 3;
+
+              const ribbonW = noteSize * 0.65;
+              this.ctx.beginPath();
+              this.ctx.roundRect(cx - ribbonW/2, drawTopY, ribbonW, drawBottomY - drawTopY, 12);
+              this.ctx.fill();
+              this.ctx.stroke();
+
+              this.ctx.strokeStyle = 'rgba(255, 105, 180, 0.4)';
+              this.ctx.lineWidth = 2;
+              for (let sy = drawTopY + 15; sy < drawBottomY; sy += 22) {
+                this.ctx.beginPath();
+                this.ctx.moveTo(cx - ribbonW/3, sy);
+                this.ctx.lineTo(cx + ribbonW/3, sy);
+                this.ctx.stroke();
+              }
+              this.ctx.restore();
+            }
+
+            if (!note.holding) {
+              this.drawAppleIcon(noteImages.long, cx, currentY, noteSize, 'long');
+            }
+          } else if (note.type === 'point') {
+            this.drawAppleIcon(noteImages.point, cx, currentY, noteSize, 'point');
+          } else {
+            this.drawAppleIcon(noteImages.basic, cx, currentY, noteSize, 'basic');
+          }
+        }
+      }
+
+      drawAppleIcon(img, cx, cy, size, type) {
+        this.ctx.save();
+        // 투명 누끼 단추 강조를 위한 드롭 섀도우
+        this.ctx.shadowColor = type === 'point' 
+          ? 'rgba(0, 180, 216, 0.7)' 
+          : (type === 'long' ? 'rgba(255, 105, 180, 0.6)' : 'rgba(100, 200, 100, 0.6)');
+        this.ctx.shadowBlur = 12;
+        this.ctx.shadowOffsetY = 4;
+
+        if (img && img.complete && img.naturalWidth > 0) {
+          // 누끼 딴 단추 이미지만 깔끔하게 렌더링
+          this.ctx.drawImage(img, cx - size/2, cy - size/2, size, size);
+        } else {
+          this.ctx.beginPath();
+          this.ctx.arc(cx, cy, size/2, 0, Math.PI * 2);
+          this.ctx.fillStyle = type === 'point' ? '#48cae4' : (type === 'long' ? '#ffb3c1' : '#a7c957');
+          this.ctx.fill();
+        }
+        this.ctx.restore();
+      }
+
+      renderEffects() {
+        for (const ef of this.effects) {
+          this.ctx.save();
+          this.ctx.globalAlpha = Math.max(0, ef.alpha);
+          this.ctx.fillStyle = ef.color;
+          this.ctx.beginPath();
+          this.ctx.arc(ef.x, ef.y, ef.radius, 0, Math.PI * 2);
+          this.ctx.fill();
+          this.ctx.restore();
+        }
+
+        for (const ft of this.floatingTexts) {
+          this.ctx.save();
+          this.ctx.globalAlpha = Math.max(0, ft.alpha);
+          this.ctx.font = '900 21px Nunito, Gaegu';
+          this.ctx.textAlign = 'center';
+          this.ctx.fillStyle = ft.color;
+          this.ctx.shadowColor = '#000';
+          this.ctx.shadowBlur = 6;
+          this.ctx.fillText(ft.text, ft.x, ft.y);
+          this.ctx.restore();
+        }
+
+        if (this.combo >= 2) {
+          this.ctx.save();
+          const centerX = this.trackLeft + this.trackWidth / 2;
+          const centerY = this.hitLineY - 140;
+
+          this.ctx.textAlign = 'center';
+          this.ctx.font = '900 52px Nunito';
+          this.ctx.fillStyle = '#ff0054';
+          this.ctx.strokeStyle = '#ffffff';
+          this.ctx.lineWidth = 6;
+          this.ctx.strokeText(`${this.combo}`, centerX, centerY);
+          this.ctx.fillText(`${this.combo}`, centerX, centerY);
+
+          this.ctx.font = '800 18px Nunito';
+          this.ctx.fillStyle = '#7209b7';
+          this.ctx.strokeText('COMBO', centerX, centerY + 24);
+          this.ctx.fillText('COMBO', centerX, centerY + 24);
+          this.ctx.restore();
+        }
+      }
+    }
+
+    let game;
+    window.addEventListener('DOMContentLoaded', () => {
+      game = new RhythmGame();
+    });
+  </script>
+</body>
+</html>
